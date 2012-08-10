@@ -1,0 +1,20 @@
+7.x-2.x
+--------------
+#1493088: Include the vid of a new draft in the node object
+#1528968: Provide hooks for altering the workflow tab content
+#1562058: No check for no existing states in State Flow
+#1562044: No check for no Node bundles in State Flow
+#1616704: Check existence of 'draft' state on hook_node_update
+#1616988: State Flow Breaks Drupal Installation profile installs
+#1595106: skip_to_workflow method when saving nodes programmatically
+#1518156: provide method to ignore workflow for node bundles (ctypes)
+#1509784: bulk revision not firing when transitioning via an event
+Rename bulk revision alter keys to state_flow_node_revision_filters, state_flow_node_revision_operations
+#1479380: fix schedule to not use JS; use write_history()
+#1459360: drush command to publish scheduled nodes
+#1415692: state_flow_schedule to allow scheduling to publish
+Added state_flow_change_vid hook
+Added state_flow_event_fired hook
+Add more parameters to state_flow_invoke_event_handlers
+#1332530: event's title in the UI
+#1328684: drupal_alter in state_flow_load_state_machine instead of setting variable
