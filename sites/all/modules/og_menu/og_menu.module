@@ -248,7 +248,8 @@ function og_menu_block_view($delta = '') {
     }
     $block['content'] = '';
     foreach ($menus as $menu) {
-      $block['content'] .= render(menu_tree($menu->mname));
+      $mtree = menu_tree($menu->mname);
+      $block['content'] .= render($mtree);
     }
   }
 
