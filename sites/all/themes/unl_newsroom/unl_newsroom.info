@@ -6,4 +6,19 @@ screenshot = screenshot.png
 core = 7.x
 engine = phptemplate
 
-stylesheets[all][] = style.css
+; File name must not be 'style.css' to inherit from unl (even if in subdir)
+stylesheets[all][] = css/styles.css
+
+; Must copy unl regions over, they do not inherit
+regions[page_top] = Page top
+regions[page_bottom] = Page bottom
+
+regions[content] = Main Content
+regions[sidebar_first] = Sidebar first
+regions[sidebar_second] = Sidebar second
+
+regions[navlinks] = Navigation Links
+regions[leftcollinks] = Related Links
+regions[contactinfo] = Contact Us
+regions[optionalfooter] = Optional Footer
+regions[footercontent] = Footer Content
