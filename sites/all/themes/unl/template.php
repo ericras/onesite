@@ -16,31 +16,6 @@ function unl_preprocess_field(&$vars, $hook) {
 }
 
 /**
- * Implements template_preprocess_html().
- */
-function unl_preprocess_html(&$vars, $hook) {
-
-  if (!module_exists('metatag')) {
-
-    if (!empty($vars['node'])) {
-        // Set the <title> tag to UNL format: Page Title | Site Name | University of Nebraska–Lincoln
-        if ($vars['is_front']) {
-          unset($vars['head_title_array']['title']);
-        }
-        // Put Group Label as the Site Name
-        $group = og_context();
-        if ($group->label != 'University of Nebraska–Lincoln') {
-          $vars['head_title_array'] = array_slice($vars['head_title_array'], 0, 1, true) +
-                                      array('group_label' => $group->label) +
-                                      array_slice($vars['head_title_array'], 1, NULL, true);
-        }
-        $vars['head_title'] = implode(' | ', $vars['head_title_array']);
-    }
-  }
-}
-
-
-/**
  * Implements template_preprocess_region().
  * Adds grid classes for sidebar_first, sidebar_second, and content regions.
  */
@@ -82,21 +57,11 @@ function unl_preprocess_node(&$vars) {
  * Implements template_preprocess_page().
  */
 function unl_preprocess_page(&$vars, $hook) {
- // echo '<pre>';var_dump($group);echo '</pre>';
-
-
   if (module_exists('og')) {
     // Set site_name to Group's display name.
     if (!empty($vars['node'])) {
       $group = og_context();
-
-      $node = node_load($group->etid);
-      $display_name = field_get_items('node', $node, 'field_display_name');
-      $output = field_view_value('node', $node, 'field_display_name', $display_name[0]);
-
-      if ($group->label) {
-        $vars['site_name'] = render($output);
-      }
+      $vars['site_name'] = $group->label;
     }
 //     //if not dealing with a node, Are we still in group context - views?
 //     if(!$vars['og_id'] && $group = og_get_group_context()){
@@ -140,12 +105,8 @@ function unl_breadcrumb($variables) {
   if (module_exists('og')) {
     $group = og_context();
 
-    if (count($breadcrumbs) > 0) {
-      // Change 'Home' to be Group name
-      $node = node_load($group->etid);
-      $display_name = field_get_items('node', $node, 'field_display_name');
-      $output = field_view_value('node', $node, 'field_display_name', $display_name[0]);
-      array_unshift($breadcrumbs, str_replace('Home', render($output), array_shift($breadcrumbs)));
+    if ($group && count($breadcrumbs) > 0) {
+      array_unshift($breadcrumbs, str_replace('Home', $group->label, array_shift($breadcrumbs)));
       // Remove Group breadcrumb for main group
       if ($group->label == 'University of Nebraska–Lincoln') {
         array_pop($breadcrumbs);
