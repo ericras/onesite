@@ -1,0 +1,9 @@
+base theme = unl
+
+name = UNL Newsroom
+description = A UNL sub-theme.
+screenshot = screenshot.png
+core = 7.x
+engine = phptemplate
+
+stylesheets[all][] = style.css
