@@ -53,12 +53,7 @@ function unl_wdn_preprocess_html(&$vars, $hook) {
  * Adds grid classes for sidebar_first, sidebar_second, and content regions.
  */
 function unl_wdn_preprocess_region(&$vars) {
-  static $grid;
-  if (!isset($grid)) {
-    $grid = _unl_wdn_grid_info();
-  }
-
-  $vars['region_name'] = str_replace('_', '-', $vars['region']);
+/*  $vars['region_name'] = str_replace('_', '-', $vars['region']);
   $vars['classes_array'][] = $vars['region_name'];
 
   if (in_array($vars['region'], array_keys($grid['regions']))) {
@@ -77,7 +72,7 @@ function unl_wdn_preprocess_region(&$vars) {
   }
   else if ($vars['region'] == 'sidebar_first') {
     $vars['classes_array'][] = 'first';
-  }
+  }*/
 }
 
 /**
@@ -99,10 +94,16 @@ function unl_wdn_preprocess_page(&$vars, $hook) {
 
 
   if (module_exists('og')) {
+    // Set site_name to Group's display name.
     if (!empty($vars['node'])) {
       $group = og_context();
+
+      $node = node_load($group->etid);
+      $display_name = field_get_items('node', $node, 'field_display_name');
+      $output = field_view_value('node', $node, 'field_display_name', $display_name[0]);
+
       if ($group->label) {
-        $vars['site_name'] = $group->label;
+        $vars['site_name'] = render($output);
       }
     }
 //     //if not dealing with a node, Are we still in group context - views?
@@ -133,31 +134,7 @@ function unl_wdn_get_instance() {
     UNL_Templates::setCachingService(new UNL_Templates_CachingService_Null());
     UNL_Templates::$options['version'] = UNL_Templates::VERSION3x1;
 
-    // Set a default template
-    $template = 'Local';
-
-    if (false === theme_get_setting('toggle_main_menu')) {
-      $template = 'Document';
-    }
-
-    if (theme_get_setting('unl_affiliate')) {
-      $template = 'Unlaffiliate_local';
-    }
-
-    if (theme_get_setting('wdn_beta')) {
-      $template = 'Debug';
-      if (theme_get_setting('unl_affiliate')) {
-        $template = 'Unlaffiliate_debug';
-      }
-      UNL_Templates::$options['templatedependentspath'] = $_SERVER['DOCUMENT_ROOT'].'/wdntemplates-dev';
-    }
-
-    $instance = UNL_Templates::factory($template);
-  }
-
-  if (theme_get_setting('unl_affiliate')) {
-    $instance->sitebranding_logo = '<a id="logo" href="'.url('<front>', array('absolute')).'" title="'.variable_get('site_name').'">'.variable_get('site_name').'</a>';
-    $instance->sitebranding_affiliate = 'An Affiliate of the University of Nebraska&ndash;Lincoln';
+    $instance = UNL_Templates::factory('Local');
   }
 
   return $instance;
@@ -171,15 +148,17 @@ function unl_wdn_breadcrumb($variables) {
   if (module_exists('og')) {
     $group = og_context();
 
-
-      if (count($breadcrumbs) > 0) {
-        //Change 'Home' to be Group name
-        array_unshift($breadcrumbs, str_replace('Home', $group->label, array_shift($breadcrumbs)));
-        // Remove Group Breadcrumb for main group
-        if ($group->label == 'University of Nebraska–Lincoln') {
-          array_pop($breadcrumbs);
-        }
+    if (count($breadcrumbs) > 0) {
+      // Change 'Home' to be Group name
+      $node = node_load($group->etid);
+      $display_name = field_get_items('node', $node, 'field_display_name');
+      $output = field_view_value('node', $node, 'field_display_name', $display_name[0]);
+      array_unshift($breadcrumbs, str_replace('Home', render($output), array_shift($breadcrumbs)));
+      // Remove Group breadcrumb for main group
+      if ($group->label == 'University of Nebraska–Lincoln') {
+        array_pop($breadcrumbs);
       }
+    }
   }
 
   //Prepend UNL
@@ -440,44 +419,4 @@ $output
 EOF;
 
   return $output;
-}
-
-/**
- * Return the abbreviated site name, assuming it has been set and we're not on the front page.
- * Otherwise, it returns the full site name.
- */
-function unl_wdn_get_site_name_abbreviated() {
-  if (!drupal_is_front_page() && theme_get_setting('site_name_abbreviation')) {
-    return theme_get_setting('site_name_abbreviation');
-  }
-  else {
-    return variable_get('site_name', 'Department');
-  }
-}
-
-/**
- * Generate grid numbers for sidebar_first, sidebar_second, and content regions.
- * Based on work in the Fusion theme (fusion_core_grid_info()).
- */
-function _unl_wdn_grid_info() {
-  static $grid;
-  if (!isset($grid)) {
-    $grid = array();
-    $grid['width'] = 12;
-    $sidebar_first_width = (block_list('sidebar_first')) ? theme_get_setting('sidebar_first_width') : 0;
-    $sidebar_second_width = (block_list('sidebar_second')) ? theme_get_setting('sidebar_second_width') : 0;
-    $grid['regions'] = array();
-
-    $regions = array('sidebar_first', 'sidebar_second', 'content');
-    foreach ($regions as $region) {
-      if ($region == 'content') {
-        $region_width = $grid['width'] - $sidebar_first_width - $sidebar_second_width;
-      }
-      if ($region == 'sidebar_first' || $region == 'sidebar_second') {
-        $region_width = ($region == 'sidebar_first') ? $sidebar_first_width : $sidebar_second_width;
-      }
-      $grid['regions'][$region] = array('width' => $region_width);
-    }
-  }
-  return $grid;
 }

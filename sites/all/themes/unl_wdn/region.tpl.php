@@ -29,7 +29,7 @@
 ?>
 
 <?php if ($region != 'navlinks'): ?>
-<div id="<?php print $region_name; ?>" class="<?php print $classes; ?>">
+<div class="<?php print $classes; ?>">
 <?php endif;?>
   <?php print $content; ?>
 <?php if ($region != 'navlinks'): ?>
