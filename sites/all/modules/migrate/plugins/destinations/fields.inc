@@ -40,7 +40,7 @@ class MigrateFieldsEntityHandler extends MigrateDestinationHandler {
             && method_exists($handler, 'fields')) {
           migrate_instrument_start($class_name . '->fields');
           $subfields = call_user_func(array($handler, 'fields'), $type,
-                                      $instance, $migration);
+                                      $machine_name, $migration);
           migrate_instrument_stop($class_name . '->fields');
           foreach ($subfields as $subfield_name => $subfield_label) {
             $fields[$machine_name . ':' . $subfield_name] = $subfield_label;
@@ -223,27 +223,15 @@ class MigrateTextFieldHandler extends MigrateFieldHandler {
     return $arguments;
   }
 
-  /**
-   * Implementation of MigrateFieldHandler::fields().
-   *
-   * @param $type
-   *  The field type.
-   * @param $instance
-   *  Instance info for the field.
-   * @param Migration $migration
-   *  The migration context for the parent field. We can look at the mappings
-   *  and determine which subfields are relevant.
-   * @return array
-   */
-  public function fields($type, $instance, $migration = NULL) {
+  public function fields($type) {
     $fields = array();
     if ($type == 'text_with_summary') {
       $fields['summary'] = t('Subfield: Summary of field contents');
     }
-    if ($instance['settings']['text_processing']) {
-      $fields['format'] = t('Subfield: Text format for the field');
-    }
-    $fields['language'] = t('Subfield: Language for the field');
+    $fields += array(
+      'format' => t('Subfield: Text format for the field'),
+      'language' => t('Subfield: Language for the field'),
+    );
     return $fields;
   }
 
@@ -278,15 +266,12 @@ class MigrateTextFieldHandler extends MigrateFieldHandler {
         if (is_array($arguments['format'])) {
           $format = $arguments['format'][$delta];
         }
-        else{
+        else {
           $format = $arguments['format'];
         }
       }
-      elseif (!empty($instance['settings']['text_processing'])) {
-        $format = $destination->getTextFormat();
-      }
       else {
-        $format = NULL;
+        $format = $destination->getTextFormat();
       }
       $item['format'] = $item['value_format'] = $format;
       // Make sure the value will fit
@@ -337,23 +322,10 @@ class MigrateTaxonomyTermReferenceFieldHandler extends MigrateFieldHandler {
     $this->registerTypes(array('taxonomy_term_reference'));
   }
 
-  /**
-   * Implementation of MigrateFieldHandler::fields().
-   *
-   * @param $type
-   *  The field type.
-   * @param $instance
-   *  Instance info for the field.
-   * @param Migration $migration
-   *  The migration context for the parent field. We can look at the mappings
-   *  and determine which subfields are relevant.
-   * @return array
-   */
-  public function fields($type, $instance, $migration = NULL) {
+  public function fields($type) {
     return array(
       'source_type' => t('Option: Set to \'tid\' when the value is a source ID'),
-      'create_term' => t('Option: Set to TRUE to create referenced terms when necessary'),
-      'ignore_case' => t('Option: Set to TRUE to ignore case differences between source data and existing term names'),
+      'create_term' => t('Option: Set to TRUE to create referenced terms when necessary')
     );
   }
 
@@ -375,14 +347,13 @@ class MigrateTaxonomyTermReferenceFieldHandler extends MigrateFieldHandler {
       $tids = $values;
     }
     elseif ($values) {
-      $names = taxonomy_vocabulary_get_names();
-
       // Get the vocabulary for this term
       if (isset($field_info['settings']['allowed_values'][0]['vid'])) {
         $vid = $field_info['settings']['allowed_values'][0]['vid'];
       }
       else {
         $vocab_name = $field_info['settings']['allowed_values'][0]['vocabulary'];
+        $names = taxonomy_vocabulary_get_names();
         $vid = $names[$vocab_name]->vid;
       }
 
@@ -395,12 +366,6 @@ class MigrateTaxonomyTermReferenceFieldHandler extends MigrateFieldHandler {
         ->condition('td.vid', $vid)
         ->execute()
         ->fetchAllKeyed(1, 0);
-      // If we're ignoring case, change both the matched term name keys and the
-      // source values to lowercase.
-      if (isset($arguments['ignore_case']) && $arguments['ignore_case']) {
-        $existing_terms = array_change_key_case($existing_terms);
-        $values = array_map('strtolower', $values);
-      }
       foreach ($values as $value) {
         if (isset($existing_terms[$value])) {
           $tids[] = $existing_terms[$value];
@@ -411,17 +376,6 @@ class MigrateTaxonomyTermReferenceFieldHandler extends MigrateFieldHandler {
           $new_term->name = $value;
           taxonomy_term_save($new_term);
           $tids[] = $new_term->tid;
-          // Add newly created term to existing array.
-          $existing_terms[$value] = $new_term->tid;
-        }
-        else {
-          // No term is found for the source value and none is set to be
-          // created: warn that data has not been imported.
-          $migration = Migration::currentMigration();
-          $migration->saveMessage(t("No matching taxonomy term found for source value '@value' in vocabulary %vocab.", array(
-            '@value' => $value,
-            '%vocab' => $names[$vocab_name]->name,
-          )), MigrationBase::MESSAGE_INFORMATIONAL);
         }
       }
     }
@@ -454,14 +408,14 @@ abstract class MigrateFileFieldBaseHandler extends MigrateFieldHandler {
    *
    * @param $type
    *  The file field type - 'file', 'image', etc.
-   * @param $instance
-   *  Instance info for the field.
+   * @param $parent_field
+   *  Name of the parent field.
    * @param Migration $migration
    *  The migration context for the parent field. We can look at the mappings
    *  and determine which subfields are relevant.
    * @return array
    */
-  public function fields($type, $instance, $migration = NULL) {
+  public function fields($type, $parent_field, $migration = NULL) {
     $fields = array(
       'file_class' => t('Option: <a href="@doc">Implementation of MigrateFile to use</a>',
         array('@doc' => 'http://drupal.org/node/1540106#file_class')),
@@ -472,7 +426,7 @@ abstract class MigrateFileFieldBaseHandler extends MigrateFieldHandler {
     // subfields specific to that class.
     if ($migration) {
       $field_mappings = $migration->getFieldMappings();
-      $class_mapping = $instance['field_name'] . ':file_class';
+      $class_mapping = $parent_field . ':file_class';
       if (isset($field_mappings[$class_mapping])) {
         $mapping = $field_mappings[$class_mapping];
         $file_class = $mapping->getDefaultValue();
@@ -524,36 +478,17 @@ abstract class MigrateFileFieldBaseHandler extends MigrateFieldHandler {
     }
 
     $return = array();
-
+    $delta = 0;
     // Note that what $value represents depends on the file class -
     // MigrateFileUri expects a filespec/URI, MigrateFileFid expects a file ID,
     // etc.
-    foreach ($values as $delta => $value) {
+    foreach ($values as $value) {
       if ($value) {
-        // Handle potentially multiple arguments
-        $instance_arguments = array();
-        foreach ($arguments as $key => $argument) {
-          // For a scalar argument, pass it directly
-          if (!is_array($argument)) {
-            $instance_arguments[$key] = $argument;
-          }
-          else {
-            if (isset($argument[$delta])) {
-              $instance_arguments[$key] = $argument[$delta];
-            }
-            else {
-              $migration->saveMessage(
-        				t('No data for subfield %key at row %delta for field %field',
-                  array('%key' => $key, '%delta' => $delta, '%field' => $field_info['field_name'])),
-                Migration::MESSAGE_WARNING);
-            }
-          }
-        }
         // If the parent entity doesn't have an explicit uid, give ownership
         // to the anonymous account
         $owner = isset($entity->uid) ? $entity->uid : 0;
         // Call the MigrateFileInterface implementation to do the real work
-        $source = new $file_class($instance_arguments);
+        $source = new $file_class($arguments);
         $file = $source->processFile($value, $owner);
 
         // Assuming we got back a valid file ID, build the proper field
@@ -561,9 +496,10 @@ abstract class MigrateFileFieldBaseHandler extends MigrateFieldHandler {
         // MigrateFile class has saved a message indicating why.
         if ($file) {
           $field_array = array('fid' => $file->fid);
-          $return[$language][] = $this->buildFieldArray($field_array, $instance_arguments, $delta);
+          $return[$language][] = $this->buildFieldArray($field_array, $arguments, $delta);
         }
       }
+      $delta++;
     }
 
     return $return;
@@ -580,13 +516,7 @@ abstract class MigrateFileFieldBaseHandler extends MigrateFieldHandler {
    *  Directory relative to the Drupal public files directory.
    */
   protected function destinationDir($field_info, $instance) {
-    // Only apply for file/image types
-    if (isset($instance['settings']['file_directory'])) {
-      $destination_dir = file_field_widget_uri($field_info, $instance);
-    }
-    else {
-      $destination_dir = 'public://';
-    }
+    $destination_dir = file_field_widget_uri($field_info, $instance);
     return $destination_dir;
   }
 
@@ -619,15 +549,15 @@ class MigrateFileFieldHandler extends MigrateFileFieldBaseHandler {
    *
    * @param $type
    *  The file field type - 'file' or 'image'
-   * @param $instance
-   *  Instance info for the field.
+   * @param $parent_field
+   *  Name of the parent field.
    * @param Migration $migration
    *  The migration context for the parent field. We can look at the mappings
    *  and determine which subfields are relevant.
    * @return array
    */
-  public function fields($type, $instance, $migration = NULL) {
-    $fields = parent::fields($type, $instance, $migration);
+  public function fields($type, $parent_field, $migration = NULL) {
+    $fields = parent::fields($type, $parent_field, $migration);
     $fields += array(
       'description' => t('Subfield: String to be used as the description value'),
       'display' => t('Subfield: String to be used as the display value'),
@@ -680,15 +610,15 @@ class MigrateImageFieldHandler extends MigrateFileFieldBaseHandler {
    *
    * @param $type
    *  The file field type - 'file' or 'image'
-   * @param $instance
-   *  Instance info for the field.
+   * @param $parent_field
+   *  Name of the parent field.
    * @param Migration $migration
    *  The migration context for the parent field. We can look at the mappings
    *  and determine which subfields are relevant.
    * @return array
    */
-  public function fields($type, $instance, $migration = NULL) {
-    $fields = parent::fields($type, $instance, $migration);
+  public function fields($type, $parent_field, $migration = NULL) {
+    $fields = parent::fields($type, $parent_field, $migration);
     $fields += array(
       'alt' => t('Subfield: String to be used as the alt value'),
       'title' => t('Subfield: String to be used as the title value'),
@@ -728,10 +658,6 @@ class MigrateNodeReferenceFieldHandler extends MigrateSimpleFieldHandler {
     ));
     $this->registerTypes(array('node_reference'));
   }
-
-  protected function notNull($value) {
-    return !is_null($value) && $value !== FALSE;
-  }
 }
 
 class MigrateUserReferenceFieldHandler extends MigrateSimpleFieldHandler {
@@ -741,9 +667,5 @@ class MigrateUserReferenceFieldHandler extends MigrateSimpleFieldHandler {
       'skip_empty' => TRUE,
     ));
     $this->registerTypes(array('user_reference'));
-  }
-
-  protected function notNull($value) {
-    return !is_null($value) && $value !== FALSE;
   }
 }

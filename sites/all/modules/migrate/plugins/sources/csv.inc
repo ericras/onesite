@@ -41,13 +41,6 @@ class MigrateSourceCSV extends MigrateSource {
   protected $headerRows = 0;
 
   /**
-   * The current row/line number in the CSV file.
-   *
-   * @var integer
-   */
-  protected $rowNumber;
-
-  /**
    * Simple initialization.
    *
    * @param string $path
@@ -92,7 +85,7 @@ class MigrateSourceCSV extends MigrateSource {
         $this->csvcolumns[] = array($header, $header);
       }
       fclose($this->csvHandle);
-      $this->csvHandle = NULL;
+      unset($this->csvHandle);
     }
     else {
       $this->csvcolumns = $csvcolumns;
@@ -138,17 +131,16 @@ class MigrateSourceCSV extends MigrateSource {
     // the number of CSV records (one record will span multiple lines). We need
     // to scan with fgetcsv to get the true count.
     if (!empty($this->options['embedded_newlines'])) {
-      $this->csvHandle = fopen($this->file, 'r');
+      $result = fopen($this->file, 'r');
       // Skip all but the last header
       for ($i = 0; $i < $this->headerRows; $i++) {
-        fgets($this->csvHandle);
+        fgets($result);
       }
       $count = 0;
       while ($this->getNextLine()) {
         $count++;
       }
-      fclose($this->csvHandle);
-      $this->csvHandle = NULL;
+      fclose($result);
     }
     else {
       // TODO. If this takes too much time/memory, use exec('wc -l')
@@ -167,14 +159,12 @@ class MigrateSourceCSV extends MigrateSource {
     // Close any previously-opened handle
     if (!is_null($this->csvHandle)) {
       fclose($this->csvHandle);
-      $this->csvHandle = NULL;
     }
     // Load up the first row, skipping the header(s) if necessary
     $this->csvHandle = fopen($this->file, 'r');
     for ($i = 0; $i < $this->headerRows; $i++) {
       $this->getNextLine();
     }
-    $this->rowNumber = 1;
   }
 
   /**
@@ -193,7 +183,6 @@ class MigrateSourceCSV extends MigrateSource {
         $row[$key] = isset($row[$int]) ? $row[$int] : NULL;
         unset($row[$int]);
       }
-      $row['csvrownum'] = $this->rowNumber++;
       return (object)$row;
     }
     else {

@@ -6,9 +6,9 @@ core = 7.x
 dependencies[] = migrate
 files[] = migrate_ui.module
 
-; Information added by drupal.org packaging script on 2012-10-27
-version = "7.x-2.5-rc1+6-dev"
+; Information added by drupal.org packaging script on 2012-06-02
+version = "7.x-2.4"
 core = "7.x"
 project = "migrate"
-datestamp = "1351300363"
+datestamp = "1338661580"
 

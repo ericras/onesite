@@ -220,14 +220,10 @@ abstract class XMLMigration extends Migration {
    *  Name of the destination field.
    * @param string $sourceField
    *  Name of the source field (optional).
-   * @param boolean $warn_on_override
-   *  Set to FALSE to prevent warnings when there's an existing mapping
-   *  for this destination field.
    */
-  public function addFieldMapping($destination_field, $source_field = NULL,
-                                  $warn_on_override = TRUE) {
+  public function addFieldMapping($destination_field, $source_field = NULL) {
     // Warn of duplicate mappings
-    if ($warn_on_override && !is_null($destination_field) && isset($this->fieldMappings[$destination_field])) {
+    if (!is_null($destination_field) && isset($this->fieldMappings[$destination_field])) {
       self::displayMessage(
         t('!name addFieldMapping: !dest was previously mapped, overridden',
           array('!name' => $this->machineName, '!dest' => $destination_field)),

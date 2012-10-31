@@ -13,7 +13,7 @@
 /**
  * Abstract intermediate class holding common settings.
  */
-abstract class AdvancedExampleMigration extends DynamicMigration {
+abstract class AdvancedExampleMigration extends Migration {
   public $basicFormat;
 
   public function __construct() {
@@ -191,7 +191,6 @@ class WineFileCopyMigration extends AdvancedExampleMigration {
     $this->addUnmigratedDestinations(array('fid', 'uid', 'timestamp',
       'destination_dir', 'destination_file', 'source_dir', 'preserve_files',
       'file_replace'));
-    $this->removeFieldMapping('path');
     $this->removeFieldMapping('pathauto');
   }
 }
@@ -239,9 +238,8 @@ class WineFileBlobMigration extends AdvancedExampleMigration {
     $this->addUnmigratedDestinations(array('fid', 'timestamp',
       'destination_dir', 'file_replace', 'preserve_files'));
 
-    // Our base class mapped these since most migrations use them, but not this
-    // one, so remove them
-    $this->removeFieldMapping('path');
+    // Our base class mapped this since most migrations use it, but not this one,
+    // so remove it
     $this->removeFieldMapping('pathauto');
   }
 }
@@ -350,7 +348,7 @@ class WineUserMigration extends AdvancedExampleMigration {
 
     // Unmapped destination fields
     $this->addUnmigratedDestinations(array('theme', 'timezone', 'language',
-      'is_new', 'field_migrate_example_favbeers', 'role_names', 'data'));
+      'is_new', 'field_migrate_example_favbeers', 'role_names'));
   }
 
   public function prepare(stdClass $account, stdClass $row) {
@@ -728,8 +726,6 @@ class WineWineMigration extends AdvancedExampleMigration {
     $this->dependencies = array('WineVariety', 'WineRegion',
       'WineBestWith', 'WineUser', 'WineProducer');
 
-    // You can add a 'track_last_imported' option to the map, to record the
-    // timestamp of when each item was last imported in the map table.
     $this->map = new MigrateSQLMap($this->machineName,
       array(
         'wineid' => array(
@@ -740,9 +736,7 @@ class WineWineMigration extends AdvancedExampleMigration {
           'alias' => 'w',
         )
       ),
-      MigrateDestinationNode::getKeySchema(),
-      'default',
-      array('track_last_imported' => TRUE)
+      MigrateDestinationNode::getKeySchema()
     );
 
     $query = db_select('migrate_example_wine', 'w')
@@ -881,10 +875,6 @@ class WineWineMigration extends AdvancedExampleMigration {
 
     // We can have multiple files per node, so we pull them here along with
     // their related data (alt/title).
-/*
- * This is disabled - see http://drupal.org/node/1679798. To demonstrate
- * remote file migration, edit the migrate_example_wine_files table and enter
- * the URLs of known remote image files, then enable this code.
     $result = db_select('migrate_example_wine_files', 'f')
               ->fields('f', array('url', 'image_alt', 'image_title'))
               ->condition('wineid', $source_id)
@@ -894,7 +884,7 @@ class WineWineMigration extends AdvancedExampleMigration {
       $current_row->image_alt[] = $row->image_alt;
       $current_row->image_title[] = $row->image_title;
     }
-*/
+
     // We could also have used this function to decide to skip a row, in cases
     // where that couldn't easily be done through the original query. Simply
     // return FALSE in such cases.
@@ -947,7 +937,6 @@ class WineCommentMigration extends AdvancedExampleMigration {
     // Unmapped destination fields
     $this->addUnmigratedDestinations(array('thread', 'language',
       'comment_body:format', 'comment_body:language'));
-    $this->removeFieldMapping('path');
     $this->removeFieldMapping('pathauto');
   }
 }
@@ -1135,7 +1124,6 @@ class WineCommentUpdatesMigration extends AdvancedExampleMigration {
     $this->addFieldMapping('homepage');
     $this->addUnmigratedDestinations(array('thread', 'language',
       'comment_body:format', 'comment_body:language'));
-    $this->removeFieldMapping('path');
     $this->removeFieldMapping('pathauto');
   }
 }
@@ -1224,7 +1212,6 @@ class WineUserUpdatesMigration extends AdvancedExampleMigration {
     $this->addFieldMapping('init');
     $this->addUnmigratedDestinations(array('theme', 'timezone', 'language',
       'picture', 'is_new', 'field_migrate_example_favbeers'));
-    $this->removeFieldMapping('path');
   }
 
   public function prepare(stdClass $account, stdClass $row) {

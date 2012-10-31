@@ -13,13 +13,6 @@
  * Destination class implementing migration into terms.
  */
 class MigrateDestinationTerm extends MigrateDestinationEntity {
-  /**
-   * Boolean indicating whether to permit duplicate terms to be created.
-   *
-   * @var bool
-   */
-  protected $allowDuplicateTerms = FALSE;
-
   static public function getKeySchema() {
     return array(
       'tid' => array(
@@ -37,11 +30,9 @@ class MigrateDestinationTerm extends MigrateDestinationEntity {
    *  Default language for terms created via this destination class.
    * @param string $text_format
    *  Default text format for terms created via this destination class.
-   * @param string $allow_duplicate_terms
-   *  Default text format for terms created via this destination class.
    */
-  static public function options($language, $text_format, $allow_duplicate_terms = FALSE) {
-    return compact('language', 'text_format', 'allow_duplicate_terms');
+  static public function options($language, $text_format) {
+    return compact('language', 'text_format');
   }
 
   /**
@@ -52,10 +43,6 @@ class MigrateDestinationTerm extends MigrateDestinationEntity {
    */
   public function __construct($bundle, array $options = array()) {
     parent::__construct('taxonomy_term', $bundle, $options);
-
-    if (isset($options['allow_duplicate_terms'])) {
-      $this->allowDuplicateTerms = $options['allow_duplicate_terms'];
-    }
   }
 
   /**
@@ -139,6 +126,7 @@ class MigrateDestinationTerm extends MigrateDestinationEntity {
     $migration = Migration::currentMigration();
     // Updating previously-migrated content?
     if (isset($row->migrate_map_destid1)) {
+      $term->tid = $row->migrate_map_destid1;
       if (isset($term->tid)) {
         if ($term->tid != $row->migrate_map_destid1) {
           throw new MigrateException(t("Incoming tid !tid and map destination nid !destid1 don't match",
@@ -212,12 +200,28 @@ class MigrateDestinationTerm extends MigrateDestinationEntity {
         $term->format = $this->textFormat;
       }
       $this->prepare($term, $row);
-
-      if (!$this->allowDuplicateTerms && $existing_term = $this->findMatchingTerm($term)) {
-        foreach ($existing_term as $field => $value) {
-          if (!isset($term->$field)) {
-            $term->$field = $existing_term->$field;
+      // See if the term, with the same parentage, already exists - if so,
+      // load it
+      $candidates = taxonomy_term_load_multiple(array(),
+        array('name' => trim($term->name), 'vid' => $term->vid));
+      foreach ($candidates as $candidate) {
+        $parents = taxonomy_get_parents($candidate->tid);
+        // We need to set up $parents as a simple array of tids
+        if (empty($parents)) {
+          $parents = array(0);
+        }
+        else {
+          // Parents array is tid => term object, make into list of tids
+          $new_parents = array();
+          foreach ($parents as $parent) {
+            $new_parents[] = $parent->tid;
           }
+          $parents = $new_parents;
+        }
+        if ($term->parent == $parents) {
+          // We've found a matching term, we'll use that
+          $term = $candidate;
+          break;
         }
       }
     }
@@ -259,42 +263,5 @@ class MigrateDestinationTerm extends MigrateDestinationEntity {
       $return = FALSE;
     }
     return $return;
-  }
-
-  /**
-   * Attempt to find a term that has the same name, vocabulary, and parents.
-   *
-   * @param object $term
-   *   A taxonomy term object with at least the name and vid properties defined.
-   *
-   * @return object
-   *   A matching taxonomy term object if found, otherwise FALSE.
-   */
-  public function findMatchingTerm($term) {
-    // See if the term, with the same parentage, already exists - if so,
-    // load it
-    $candidates = taxonomy_term_load_multiple(array(),
-      array('name' => trim($term->name), 'vid' => $term->vid));
-    foreach ($candidates as $candidate) {
-      $parents = taxonomy_get_parents($candidate->tid);
-      // We need to set up $parents as a simple array of tids
-      if (empty($parents)) {
-        $parents = array(0);
-      }
-      else {
-        // Parents array is tid => term object, make into list of tids
-        $new_parents = array();
-        foreach ($parents as $parent) {
-          $new_parents[] = $parent->tid;
-        }
-        $parents = $new_parents;
-      }
-      if ($term->parent == $parents) {
-        // We've found a matching term.
-        return $candidate;
-      }
-    }
-
-    return FALSE;
   }
 }

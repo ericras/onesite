@@ -10,18 +10,13 @@ class MigratePathEntityHandler extends MigrateDestinationHandler {
     $this->registerTypes(array('entity'));
   }
 
-  public function fields($entity_type, $bundle) {
+  public function fields() {
     if (module_exists('path')) {
-      switch ($entity_type) {
-        case 'node':
-          return array('path' => t('Node: Path alias'));
-        case 'user':
-          return array('path' => t('User: Path alias'));
-        case 'taxonomy_term':
-          return array('path' => t('Term: Path alias'));
-      }
+      return array('path' => t('Node: Path alias'));
     }
-    return array();
+    else {
+      return array();
+    }
   }
 
   public function prepare($entity, stdClass $row) {

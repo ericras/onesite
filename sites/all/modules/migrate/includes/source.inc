@@ -252,8 +252,9 @@ abstract class MigrateSource implements Iterator {
     while ($row = $this->getNextRow()) {
       migrate_instrument_stop(get_class($this) . ' getNextRow');
       // Populate the source key for this row
-      $this->currentKey = $this->activeMigration->prepareKey(
-        $this->activeMap->getSourceKey(), $row);
+      foreach ($this->activeMap->getSourceKey() as $field_name => $field_schema) {
+        $this->currentKey[$field_name] = $row->$field_name;
+      }
 
       // Pick up the existing map row, if any, unless getNextRow() did it.
       if (!$this->mapRowAdded) {
@@ -299,14 +300,8 @@ abstract class MigrateSource implements Iterator {
         $this->currentRow = NULL;
         continue;
       }
-      // 5. The initial highwater mark, before anything is migrated, is ''. We
-      //    want to make sure we don't mistakenly skip rows with a highwater
-      //    field value of 0, so explicitly handle '' here.
-      elseif ($this->activeMigration->getHighwater() === '') {
-        // Fall through
-      }
-      // 6. So, we are using highwater marks. Take the row if its highwater field
-      //    value is greater than the saved mark, otherwise skip it.
+      // 5. So, we are using highwater marks. Take the row if its highwater field
+      //    value is greater than the saved marked, otherwise skip it.
       else {
         // Call prepareRow() here, in case the highwaterField needs preparation
         if ($this->prepareRow($row) !== FALSE) {
@@ -358,8 +353,8 @@ abstract class MigrateSource implements Iterator {
     migrate_instrument_stop(get_class($this->activeMigration) . ' prepareRow');
     // We're explicitly skipping this row - keep track in the map table
     if ($return === FALSE) {
-      $this->activeMigration->getMap()->saveIDMapping($row, array(),
-        MigrateMap::STATUS_IGNORED, $this->activeMigration->rollbackAction);
+      $this->activeMigration->getMap()->saveIDMapping($row, array(NULL),
+                                                      MigrateMap::STATUS_IGNORED);
       $this->numIgnored++;
       $this->currentRow = NULL;
       $this->currentKey = NULL;

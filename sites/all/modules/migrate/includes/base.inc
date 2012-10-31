@@ -363,17 +363,6 @@ abstract class MigrationBase {
       $machine_name = self::machineFromClass($class_name);
     }
 
-    if (!preg_match('|^[a-z0-9_]+$|i', $machine_name)) {
-      throw new Exception(t('!name is not a valid Migration machine name. Use only alphanumeric or underscore characters.',
-                          array('!name' => $machine_name)));
-    }
-
-    // Making sure the machine name is in the arguments array helps with
-    // chicken-and-egg problems in determining the machine name.
-    if (!isset($arguments['machine_name'])) {
-      $arguments['machine_name'] = $machine_name;
-    }
-
     // Register the migration if it's not already there; if it is,
     // update the class and arguments in case they've changed.
     db_merge('migrate_status')
@@ -884,13 +873,7 @@ abstract class MigrationBase {
         }
 
         if ($return == MigrationBase::RESULT_COMPLETED && isset($this->total_successes)) {
-          $time = microtime(TRUE) - $this->starttime;
-          if ($time > 0) {
-            $overallThroughput = round(60 * $this->total_successes / $time);
-          }
-          else {
-            $overallThroughput = 9999;
-          }
+          $overallThroughput = round(60*$this->total_successes / (microtime(TRUE) - $this->starttime));
         }
         else {
           $overallThroughput = 0;
@@ -1016,8 +999,7 @@ abstract class MigrationBase {
       return $value;
     }
 
-    $date = new DateTime($value);
-    $time = $date->format('U');
+    $time = strtotime($value);
     if ($time == FALSE) {
       // Handles form YYYY-MM-DD HH:MM:SS.garbage
       if (drupal_strlen($value) > 19) {
