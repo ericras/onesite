@@ -1,0 +1,68 @@
+<?php
+
+abstract class ReleaseMigration extends Migration {
+  public function __construct() {
+    parent::__construct(MigrateGroup::getInstance('release'));
+
+    $this->team = array(
+      new MigrateTeamMember('Eric Rasmussen', 'eric@unl.edu', t('M.M.F.')),
+    );
+
+    // Use another database
+    Database::addConnectionInfo('news_migration', 'default', array(
+      'driver' => 'mysql',
+      'database' => 'news',
+      'username' => 'root',
+      'password' => 'ertyu9',
+      'host' => 'localhost',
+      'prefix' => '',
+    ));
+
+  }
+}
+
+class ReleaseNodeMigration extends ReleaseMigration {
+  public function __construct() {
+    parent::__construct();
+    $this->description = t('Migrate release pages to nodes');
+
+    $query = Database::getConnection('default', 'news_migration')
+      ->select('releases', 'r')
+      ->fields('r', array('id', 'headline', 'body',
+                          'eventdate', 'eventtime', 'eventenddate',
+                          'release_date', 'datecreated', 'datemodified'));
+
+    $this->source = new MigrateSourceSQL($query);
+
+    $this->destination = new MigrateDestinationNode('news_release');
+
+    $this->map = new MigrateSQLMap($this->machineName,
+      array(
+        'id' => array(
+          'type' => 'int',
+          'length' => 11,
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'alias' => 'r',
+        ),
+      ),
+      MigrateDestinationNode::getKeySchema()
+    );
+
+
+    $this->addFieldMapping('title', 'headline');
+    $this->addFieldMapping('body', 'body')->arguments(array('format' => 'full_html'));
+    $this->addFieldMapping('created', 'datecreated');
+    $this->addFieldMapping('changed', 'datemodified');
+
+    $arguments = DateMigrateFieldHandler::arguments('America/Chicago');
+    $this->addFieldMapping('field_date', 'date_range')->arguments($arguments);
+
+    // @TODO Set defaultValue to gid of News Releases group.
+    $this->addFieldMapping('group_audience')->defaultValue(4);
+  }
+
+  public function prepareRow($current_row) {
+    $current_row->date_range = $current_row->eventdate;
+  }
+}

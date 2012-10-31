@@ -1,0 +1,9 @@
+name = "Migrate UNL_News"
+description = "Move news releases from UNL_News project hosted at newsroom.unl.edu/releases"
+package = "Development"
+core = 7.x
+
+dependencies[] = migrate
+
+files[] = migrate_releases.module
+files[] = migrate_releases.migrate.inc
