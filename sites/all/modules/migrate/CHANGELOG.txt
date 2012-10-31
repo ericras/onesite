@@ -1,4 +1,55 @@
 
+Migrate 2.5 Release Candidate 1
+===============================
+
+IMPORTANT: Automatic registration of new migration classes is no longer done on
+a cache clear - you must explicitly request it with a "drush mar" (drush
+migrate-auto-register) command, or by clicking the "Register migration changes"
+button at admin/content/migrate/configure.
+
+Features and enhancements
+- #1778952 - Enable registration of dynamic migrations via hook_migrate_api().
+             Add explicit auto-registration of non-dynamic migrations, remove
+             performing registration on cache clear.
+- #1421974 - Add queueMessage(), so messages can be generated in prepareRow().
+- #1626374 - Allow creation of duplicate terms.
+- #1810306 - Allow multi-value keys in MigrteItemJSON.
+- #1799964 - Add reference query getter to MigrateSourceSQL.
+- #1670410 - Sanity-check migration machine names.
+- #1637458 - Pass field instance rather than just field name to field() methods.
+- #1688312 - Allow any file field argument to have per-instance values.
+- #1701764 - Add prepareKey() method to customize source keys.
+- #1703050 - Add track_last_imported option for maps.
+- #1690092 - Protect migrations, or specific rows, from rollback.
+- #1672572 - Stifle mapping override messages.
+- #1621608 - Support for splitting files on import.
+- #1637292 - Support case-sensitive matching on term reference fields.
+- #1647594 - Add information message on unmatched terms.
+- #1621906 - Support DESTINATION system-of-records for menu links.
+
+Bug fixes
+- #1659150 - Change 'ok' message types to 'status'.
+- #1690080 - Deal with self-references in handleSourceMigration().
+- #1797644 - Remove bogus assignment on term update.
+- #1807522 - Handle ignored map rows in handleSourceMigration().
+- #1803648, #1805184 - Handle empty values in handleSourceMigration().
+- #1780850 - By default, urlencode all path components in MigrateFileUri;
+- #1763932 - Empty path aliases generated for users.
+- #1717284 - Make sure nodes with unspecified languages end up language-neutral.
+- #1712434 - Highwater fails when highwater field values == 0.
+- #1708296 - Handle timestamps before 1902.
+- #1637444 - Don't offer format subfield for plain text fields.
+- #1700678 - Only show path as a destination where applicable.
+- #1693304 - Role import results not reported.
+- #1676652 - Fix preserve_files issues with file destination, MigrateFilFid,
+             FILE_EXISTS_REUSE cases.
+- #1679798 - Remove remote file import, for reliability of simpletests.
+- #1619822 - Cleanup drush subprocess handling.
+- #1635184 - Properly NULL csvHandle when closing.
+- #1630544 - Fix FILE_EXISTS_REUSE to actually reuse existing file entities.
+- #1618466 - Fix picture notice when updating users.
+- #1615682 - Fix to CSV record counting.
+
 Migrate 2.4
 ===========
 
@@ -9,9 +60,13 @@ to properly use the new implementation. See http://drupal.org/node/1540106 for
 details on how to use the new handlers and destination.
 
 Features and enhancements
+- #1685122 - Add previous source field name to notice.
+- #1692912 - Add vocabulary name to notice.
 - #1606586 - Add activeUrl public method to MigrateSourceXML.
 
 Bug fixes
+- #1680878 - Fix rollback through UI.
+- #1693492 - Map table query not using right connection.
 - #1614318 - MigrateFileUri failed to pass file object through.
 - #1601974 - Remove percent sign fix-up, leave to particular application.
 - #1600912 - Base constructor was undermining UI override of displayFunction.
