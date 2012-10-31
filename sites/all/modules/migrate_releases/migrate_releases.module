@@ -1,5 +1,10 @@
 <?php
 
+/**
+ *
+ * @author erasmussen
+ *
+ */
 abstract class ReleaseMigration extends Migration {
   public function __construct() {
     parent::__construct(MigrateGroup::getInstance('release'));
@@ -21,6 +26,11 @@ abstract class ReleaseMigration extends Migration {
   }
 }
 
+/**
+ *
+ * @author erasmussen
+ *
+ */
 class ReleaseNodeMigration extends ReleaseMigration {
   public function __construct() {
     parent::__construct();
@@ -55,14 +65,26 @@ class ReleaseNodeMigration extends ReleaseMigration {
     $this->addFieldMapping('created', 'datecreated');
     $this->addFieldMapping('changed', 'datemodified');
 
-    $arguments = DateMigrateFieldHandler::arguments('America/Chicago');
-    $this->addFieldMapping('field_date', 'date_range')->arguments($arguments);
+    // Date field, prepareRow used to format _daterange
+    $this->addFieldMapping('field_date', '_daterange');
 
     // @TODO Set defaultValue to gid of News Releases group.
     $this->addFieldMapping('group_audience')->defaultValue(4);
+
+    $this->addFieldMapping(null, 'eventdate');
+    $this->addFieldMapping(null, 'eventtime');
+    $this->addFieldMapping(null, 'eventenddate');
   }
 
+  /**
+   * (non-PHPdoc)
+   * @see Migration::prepareRow()
+   */
   public function prepareRow($current_row) {
-    $current_row->date_range = $current_row->eventdate;
+    $date_data = array(
+      'from' => (string) $current_row->eventdate . $current_row->eventtime,
+      'to' => (string) $current_row->eventenddate,
+    );
+    $current_row->_daterange = drupal_json_encode($date_data);
   }
 }
