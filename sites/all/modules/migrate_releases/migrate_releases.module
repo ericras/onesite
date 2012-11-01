@@ -69,14 +69,12 @@ class ReleaseNodeMigration extends ReleaseMigration {
     $kelly = user_load_by_name('kbartling2');
     $this->addFieldMapping('uid')->defaultValue($kelly->uid);
     $this->addFieldMapping('created', 'datecreated');
-    $this->addFieldMapping('changed', 'release_date');
-
-
-    // @TODO Set defaultValue to gid of News Releases group.
-    $this->addFieldMapping('group_audience')->defaultValue(4);
+    $this->addFieldMapping('changed', 'datemodified');
+    $this->addFieldMapping('scheduler', 'release_date');
+    $this->addFieldMapping('og_group_ref')->defaultValue(4);
 
      // Unmapped source fields
-    $this->addUnmigratedSources(array('eventtime', 'eventenddate', 'city', 'datemodified'));
+    $this->addUnmigratedSources(array('eventtime', 'eventenddate', 'city'));
 
     // Unmapped destination fields
     $this->addUnmigratedDestinations(array('sticky', 'is_new'));
@@ -94,7 +92,34 @@ class ReleaseNodeMigration extends ReleaseMigration {
     );
     $current_row->eventdate = drupal_json_encode($date_data);
 
+    // Format release_date datetime field as timestamp for Scheduler
+    $current_row->release_date = strtotime($current_row->release_date);
   }
 }
 
 
+
+/**
+ * Scheduler support
+ */
+class MigrateSchedulerHandler extends MigrateDestinationHandler {
+  public function __construct() {
+    $this->registerTypes(array('node'));
+  }
+
+  public function fields($entity_type, $bundle) {
+    return array(
+      'scheduler' => t('Scheduler: Publishing date for scheduler'),
+    );
+  }
+
+  public function complete($entity, stdClass $row) {
+    db_insert('scheduler')
+          ->fields(array(
+            'nid' => $entity->nid,
+            'publish_on' => $row->release_date,
+            'unpublish_on' => 0,
+          ))
+          ->execute();
+  }
+}

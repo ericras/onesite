@@ -10,13 +10,7 @@ engine = phptemplate
 stylesheets[all][] = css/styles.css
 
 ; Must copy unl regions over, they do not inherit
-regions[page_top] = Page top
-regions[page_bottom] = Page bottom
-
 regions[content] = Main Content
-regions[sidebar_first] = Sidebar first
-regions[sidebar_second] = Sidebar second
-
 regions[navlinks] = Navigation Links
 regions[leftcollinks] = Related Links
 regions[contactinfo] = Contact Us

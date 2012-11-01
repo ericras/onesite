@@ -60,8 +60,9 @@ function unl_preprocess_page(&$vars, $hook) {
   if (module_exists('og')) {
     // Set site_name to Group's display name.
     if (!empty($vars['node'])) {
-      $group = og_context();
-      $vars['site_name'] = $group->label;
+      $group_context = og_context();
+      $group = node_load($group_context['gid']);
+      $vars['site_name'] = $group->title;
     }
 //     //if not dealing with a node, Are we still in group context - views?
 //     if(!$vars['og_id'] && $group = og_get_group_context()){
@@ -103,12 +104,13 @@ function unl_get_instance() {
 function unl_breadcrumb($variables) {
   $breadcrumbs = $variables['breadcrumb'];
   if (module_exists('og')) {
-    $group = og_context();
+    $group_context = og_context();
+    $group = node_load($group_context['gid']);
 
     if ($group && count($breadcrumbs) > 0) {
-      array_unshift($breadcrumbs, str_replace('Home', $group->label, array_shift($breadcrumbs)));
+      array_unshift($breadcrumbs, str_replace('Home', $group->title, array_shift($breadcrumbs)));
       // Remove Group breadcrumb for main group
-      if ($group->label == 'University of Nebraska–Lincoln') {
+      if ($group->title == 'University of Nebraska–Lincoln') {
         array_pop($breadcrumbs);
       }
     }

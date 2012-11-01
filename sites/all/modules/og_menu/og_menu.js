@@ -11,6 +11,7 @@
       var enabled = $('#edit-menu-enabled').is(':checked');
 
       var holder = document.createElement('select');
+      var selectors = 'select[name^="og_group_ref"], input[name^="og_group_ref"]';
 
       // Toggle menu alteration
       function toggle(values) {
@@ -42,7 +43,7 @@
         if (values[0]) {
           // Select the menu for the first available group.
           for(var i in Drupal.settings.og_menu.menus) {
-            if ((enabled === true) && $('.menu-parent-select option[value="'+originalParent+'"]')) {
+            if ((enabled === true) && $('.menu-parent-select option[value='+originalParent+']')) {
               $('.menu-parent-select').val(originalParent);
             }
             else if (Drupal.settings.og_menu.menus[i] == values[0]) {
@@ -61,12 +62,12 @@
       };
 
       // Alter menu on OG select change and init
-      if ($('select.group-audience').size()) {
-        $('select.group-audience').change(toggleSelect).ready(toggleSelect);
+      if ($(selectors).size()) {
+        $(selectors).change(toggleSelect).ready(toggleSelect);
       }
 
       // init
-      toggle($('select.group-audience').val());
+      toggle($(selectors).val());
     }
 
   }

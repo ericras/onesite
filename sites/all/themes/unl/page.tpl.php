@@ -99,13 +99,7 @@ else {
                       . render($action_links) . PHP_EOL;
 }
 
-if ($page['sidebar_first']) {
-  $t->maincontentarea .= render($page['sidebar_first']) . PHP_EOL;
-}
 $t->maincontentarea .= render($page['content']) . PHP_EOL;
-if ($page['sidebar_second']) {
-  $t->maincontentarea .= render($page['sidebar_second']) . PHP_EOL;
-}
 
 // Related Links
 if ($page['leftcollinks']) {

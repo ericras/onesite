@@ -52,14 +52,13 @@ function og_theme_og_fields_info() {
  * Change the theme, based on a group context.
  */
 function og_theme_custom_theme() {
-  if ($group = og_context()) {
-    // Load the entity.
-    $entity = $group->getEntity();
-
+  if ($context = og_context()) {
+    // Load the group.
+    $wrapper = entity_metadata_wrapper($context['group_type'], $context['gid']);
     // Check if a theme field exists, and it isn't defined as "default"
     // (i.e. use the default site theme).
-    if (!empty($entity->{OG_THEME_FIELD}[LANGUAGE_NONE][0]['value']) && $entity->{OG_THEME_FIELD}[LANGUAGE_NONE][0]['value'] != '__default') {
-      return $entity->{OG_THEME_FIELD}[LANGUAGE_NONE][0]['value'];
+    if (!empty($wrapper->{OG_THEME_FIELD}) && $wrapper->{OG_THEME_FIELD}->value() != '__default') {
+      return $wrapper->{OG_THEME_FIELD}->value();
     }
   }
 }
